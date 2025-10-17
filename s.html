@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Sorpresa</title>
+<meta name="theme-color" content="#e5e7eb"/>
+<style>
+  :root{--bg1:#f3f4f6;--bg2:#e5e7eb}
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:linear-gradient(135deg,var(--bg1),var(--bg2));
+       font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111;padding:16px}
+  .card{width:100%;max-width:520px;background:#fff;border-radius:22px;padding:24px;border:1px solid #eee;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+  .badge{display:inline-block;padding:6px 12px;border-radius:999px;background:#f3f4f6;font-size:12px;margin-bottom:8px}
+  h1{margin:.25rem 0 .5rem;font-size:28px}
+  p{margin:.25rem 0 1rem;line-height:1.6}
+  .locked{border:2px dashed #cbd5e1;background:#f8fafc;border-radius:12px;padding:14px;margin-top:8px}
+  .ok{background:#ecfeff;border:1px solid #a5f3fc;border-radius:12px;padding:12px}
+  .hint{font-size:12px;opacity:.7}
+  #title-real{display:none} #title-generic{display:block}
+  .unlocked #title-real{display:block} .unlocked #title-generic{display:none}
+</style>
+</head>
+<body>
+<main id="card" class="card">
+  <span class="badge">Sorpresa</span>
+  <h1 id="title-generic">🎁 C’è una sorpresa!</h1>
+  <h1 id="title-real"></h1>
+
+  <div id="content" hidden>
+    <div class="ok">
+      <p><strong>È fatta!</strong> Questa è la tua sorpresa 🥰</p>
+      <p id="desc">Preparati: sarà speciale.</p>
+    </div>
+    <p class="hint">Conserva questo bigliettino: servirà per sbloccarne un altro.</p>
+  </div>
+
+  <div id="locked" class="locked" hidden>
+    <p>🔒 Questa sorpresa è bloccata per ora.</p>
+    <p class="hint">Quando l’organizzatore ti darà un <em>QR staff</em>, torna qui e ricarica.</p>
+  </div>
+
+  <p class="hint">ID: <span id="pid"></span> • <span id="pageinfo">Sorpresa bloccata</span></p>
+</main>
+
+<script>
+  const API_BASE  = https://script.google.com/macros/s/AKfycbyJoXcRaNMUcdfKfAbStzqu6PGERill1SeZoZ_k_8MmttHx6XRMIAWyi1l6S8Mc436sAA/exec; // <-- metti l'URL /exec
+  const PLAYER_ID = IRENE01; // <-- il tuo destinatario
+
+  const params = new URLSearchParams(location.search);
+  const KEY = params.get('k') || "";
+
+  pid.textContent = PLAYER_ID;
+
+  function showLocked(){
+    document.title = "Sorpresa";
+    pageinfo.textContent = "Sorpresa bloccata";
+    card.classList.remove('unlocked');
+    content.hidden = true; locked.hidden = false;
+  }
+
+  async function check(){
+    if(!KEY){ showLocked(); return; }
+    try{
+      const r = await fetch(`${API_BASE}?action=checkopen_by_key&id=${encodeURIComponent(PLAYER_ID)}&key=${encodeURIComponent(KEY)}`, {cache:'no-store'});
+      const js = await r.json();
+      if(!js || !js.ok){ showLocked(); return; }
+      if(js.allowed){
+        const realTitle = js.title || "Sorpresa";
+        document.title = realTitle;
+        title-real.textContent = realTitle;
+        pageinfo.textContent = realTitle;
+        card.classList.add('unlocked');
+        content.hidden = false; locked.hidden = true;
+      } else {
+        showLocked();
+      }
+    }catch(e){ showLocked(); }
+  }
+  check();
+</script>
+</body>
+</html>
