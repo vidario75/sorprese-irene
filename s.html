@@ -47,54 +47,84 @@
 </main>
 
 <script>
-  // CONFIG — CAMBIA QUI
-  const API_BASE  = "https://script.google.com/macros/s/AKfycbyJoXcRaNMUcdfKfAbStzqu6PGERill1SeZoZ_k_8MmttHx6XRMIAWyi1l6S8Mc436sAA/exec";
+  // >>> CONFIG <<<
+  const API_BASE  = "https://script.google.com/macros/s/AKfycbxr8qtzUH2UsrFETNweEcIEos5QFjUBN5nS9FTzMzTGkLO3GGV7j_ZPSqHyAkVArEsx-A/exec";
   const PLAYER_ID = "IRENE01";
 
-  // elementi
-  const card   = document.getElementById('card');
-  const content= document.getElementById('content');
-  const locked = document.getElementById('locked');
-  const pid    = document.getElementById('pid');
-  const pageinfo = document.getElementById('pageinfo');
-  const titleRealEl = document.getElementById('title-real');
+  // DOM refs
+  const card      = document.getElementById('card');
+  const content   = document.getElementById('content');
+  const locked    = document.getElementById('locked');
+  const pid       = document.getElementById('pid');
+  const pageinfo  = document.getElementById('pageinfo');
+  const titleReal = document.getElementById('title-real');
 
   pid.textContent = PLAYER_ID;
 
+  const params = new URLSearchParams(location.search);
+  const KEY = (params.get('k') || "").trim();
+
+  // UI helpers
+  function showLoading(){
+    document.title = "Sorpresa";
+    pageinfo.textContent = "Verifica in corso…";
+    card.classList.remove('unlocked');
+    content.hidden = true;
+    locked.hidden  = false;
+    const p = locked.querySelector('p');
+    if (p) p.textContent = "⏳ Verifica in corso…";
+  }
   function showLocked(){
     document.title = "Sorpresa";
     pageinfo.textContent = "Sorpresa bloccata";
     card.classList.remove('unlocked');
     content.hidden = true;
     locked.hidden  = false;
+    const p = locked.querySelector('p');
+    if (p) p.textContent = "🔒 Questa sorpresa è bloccata per ora.";
+  }
+  function showUnlocked(title){
+    document.title = title;
+    titleReal.textContent = title;
+    pageinfo.textContent = title;
+    card.classList.add('unlocked');
+    content.hidden = false;
+    locked.hidden  = true;
   }
 
-  async function check(){
-    const params = new URLSearchParams(location.search);
-    const KEY = (params.get('k') || "").trim();
-    if(!KEY){ showLocked(); return; }
-    try{
-      const url = `${API_BASE}?action=checkopen_by_key&id=${encodeURIComponent(PLAYER_ID)}&key=${encodeURIComponent(KEY)}`;
-      const r = await fetch(url, {cache:'no-store'});
-      const js = await r.json();
+  async function checkOnce(){
+    const url = `${API_BASE}?action=checkopen_by_key&id=${encodeURIComponent(PLAYER_ID)}&key=${encodeURIComponent(KEY)}&_=${Date.now()}`;
+    const r = await fetch(url, { cache:'no-store' });
+    return r.json();
+  }
 
-      if(!js || !js.ok){ showLocked(); return; }
-      if(js.allowed){
-        const realTitle = js.title || "Sorpresa";
-        document.title = realTitle;
-        titleRealEl.textContent = realTitle;
-        pageinfo.textContent = realTitle;
-        card.classList.add('unlocked');
-        content.hidden = false;
-        locked.hidden  = true;
+  let checking = false;
+  async function check(){
+    if (checking) return;
+    checking = true;
+    showLoading();
+    if (!KEY){ showLocked(); checking=false; return; }
+    try{
+      const js = await checkOnce();
+      if (js && js.ok && js.allowed){
+        showUnlocked(js.title || "Sorpresa");
       } else {
         showLocked();
       }
-    }catch(e){
+    } catch(e){
       showLocked();
+    } finally {
+      checking = false;
     }
   }
-  check();
+
+  // Avvio “robusto” contro bfcache/ritorni
+  check();                                 // normale page load
+  window.addEventListener('pageshow', () => { check(); });          // ritorno da bfcache
+  document.addEventListener('visibilitychange', () => {             // scheda torna visibile
+    if (document.visibilityState === 'visible') check();
+  });
 </script>
+
 </body>
 </html>
