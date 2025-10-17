@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="it"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⛸️ Giornata sui Pattini</title>
+<meta name="theme-color" content="#fb7185">
+<style>
+
+:root{--accent:#fff}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:100%;max-width:420px;background:rgba(255,255,255,0.10);
+  color:var(--accent);border:1px solid rgba(255,255,255,0.35);border-radius:24px;padding:24px;
+  backdrop-filter:blur(10px);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.badge{display:inline-block;padding:6px 12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+  border:1px solid rgba(255,255,255,.6);border-radius:999px;margin-bottom:12px;opacity:.95}
+h1{font-size:28px;margin:8px 0 4px}
+h2{font-size:16px;margin:0 0 12px;opacity:.9}
+p{font-size:16px;line-height:1.6;margin:0 0 12px}
+.footer{opacity:.85;font-size:12px;margin-top:10px}
+
+body{background:linear-gradient(135deg,#fb7185,#f97316)}
+:root{--accent:#ffffff;}
+</style></head>
+<body>
+<canvas id="confetti"></canvas>
+<main class="card">
+  <span class="badge">Sorpresa 1 • ID AMORE01</span>
+  <h1>⛸️ Giornata sui Pattini</h1>
+  <h2>“Mano nella mano, scivolando leggeri”</h2>
+  <p>Prepara i guanti: oggi pattiniamo insieme!</p>
+  <p class="footer">Codice: <strong>STEP1</strong> • Valido una volta • Conserva questo bigliettino ❤️</p>
+</main>
+<script>
+const canvas=document.getElementById('confetti');if(canvas){const c=canvas.getContext('2d');let W,H;
+function R(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight}window.addEventListener('resize',R);R();
+const a=[];for(let i=0;i<110;i++){a.push({x:Math.random()*W,y:Math.random()*H,r:2+Math.random()*4,vx:-1+Math.random()*2,vy:1+Math.random()*2})}
+function d(){c.clearRect(0,0,W,H);c.fillStyle='rgba(255,255,255,.9)';a.forEach(o=>{c.beginPath();c.arc(o.x,o.y,o.r,0,Math.PI*2);c.fill();o.y+=o.vy;o.x+=o.vx;if(o.y>H)o.y=-10;if(o.x<0)o.x=W;if(o.x>W)o.x=0});requestAnimationFrame(d)}d();}
+</script>
+</body></html>
