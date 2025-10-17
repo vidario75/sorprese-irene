@@ -11,9 +11,10 @@
   body{
     min-height:100vh;display:flex;align-items:center;justify-content:center;
     background:linear-gradient(135deg,var(--bg1),var(--bg2));
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111;padding:16px
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111;padding:16px;
+    overflow-x:hidden;
   }
-  .card{width:100%;max-width:520px;background:#fff;border-radius:22px;padding:24px;border:1px solid #eee;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+  .card{position:relative;width:100%;max-width:520px;background:#fff;border-radius:22px;padding:24px;border:1px solid #eee;box-shadow:0 10px 30px rgba(0,0,0,.12)}
   .badge{display:inline-block;padding:6px 12px;border-radius:999px;background:#f3f4f6;font-size:12px;margin-bottom:8px}
   h1{margin:.25rem 0 .5rem;font-size:28px}
   p{margin:.25rem 0 1rem;line-height:1.6}
@@ -22,57 +23,94 @@
   .hint{font-size:12px;opacity:.7}
   #title-real{display:none} #title-generic{display:block}
   .unlocked #title-real{display:block} .unlocked #title-generic{display:none}
+
+  /* canvas coriandoli */
+  #confetti {
+    position:absolute; inset:-10px -10px auto -10px;
+    width:calc(100% + 20px); height:0; pointer-events:none;
+  }
+  .unlocked #confetti { height:160px; } /* compare solo quando sbloccato */
 </style>
 </head>
 <body>
 <main id="card" class="card">
+  <canvas id="confetti"></canvas>
+
   <span class="badge">Sorpresa</span>
   <h1 id="title-generic">🎁 C’è una sorpresa!</h1>
   <h1 id="title-real"></h1>
 
+  <!-- CONTENUTO SBLOCCATO -->
   <div id="content" hidden>
-    <div class="ok">
+    <div class="ok" id="okbox">
       <p><strong>È fatta!</strong> Questa è la tua sorpresa 🥰</p>
-      <p id="desc">Preparati: sarà speciale.</p>
+      <div id="desc">
+        <!-- verrà riempito con frasi personalizzate -->
+      </div>
     </div>
-    <p class="hint">Conserva questo bigliettino: servirà per sbloccarne un altro.</p>
   </div>
 
+  <!-- BLOCCATA / LOADING -->
   <div id="locked" class="locked" hidden>
-    <p>🔒 Questa sorpresa è bloccata per ora.</p>
-    <p class="hint">Quando l’organizzatore ti darà un <em>QR staff</em>, torna qui e ricarica.</p>
+    <p id="locked-msg">⏳ Verifica in corso…</p>
+    <p class="hint" id="locked-hint">Attendi un momento…</p>
   </div>
 
-  <p class="hint">ID: <span id="pid"></span> • <span id="pageinfo">Sorpresa bloccata</span></p>
+  <!-- footer neutro (niente spoiler) -->
+  <p class="hint">ID: <span id="pid"></span> • <span id="pageinfo">Verifica in corso…</span></p>
 </main>
 
 <script>
-  // >>> CONFIG <<<
+  /* >>> CONFIG <<< */
   const API_BASE  = "https://script.google.com/macros/s/AKfycbxr8qtzUH2UsrFETNweEcIEos5QFjUBN5nS9FTzMzTGkLO3GGV7j_ZPSqHyAkVArEsx-A/exec";
   const PLAYER_ID = "IRENE01";
+
+  /* copy per-sorpresa (in base al titolo che torna dall’API) */
+  const COPY = {
+    "⛸️ Giornata sui Pattini": [
+      "Mano nella mano, scivoliamo leggeri.",
+      "Tra una risata e una piroetta, il tempo vola."
+    ],
+    "🎬 Serata al Cinema": [
+      "Popcorn, sguardi e risate in penombra.",
+      "Scegliamo un posto in fondo, solo noi due."
+    ],
+    "📺 Film a Casa": [
+      "Copertina, luci soffuse e coccole.",
+      "Playlist pronta, il divano è la nostra prima fila."
+    ],
+    "🍝 Cuciniamo Insieme": [
+      "Ingredienti: tu, io e un pizzico d’amore.",
+      "Ricetta a sorpresa e musica in sottofondo."
+    ]
+  };
 
   // DOM refs
   const card      = document.getElementById('card');
   const content   = document.getElementById('content');
   const locked    = document.getElementById('locked');
+  const lockedMsg = document.getElementById('locked-msg');
+  const lockedHint= document.getElementById('locked-hint');
   const pid       = document.getElementById('pid');
   const pageinfo  = document.getElementById('pageinfo');
   const titleReal = document.getElementById('title-real');
+  const descBox   = document.getElementById('desc');
 
   pid.textContent = PLAYER_ID;
 
   const params = new URLSearchParams(location.search);
   const KEY = (params.get('k') || "").trim();
 
-  // UI helpers
+  /* UI helpers */
   function showLoading(){
     document.title = "Sorpresa";
     pageinfo.textContent = "Verifica in corso…";
     card.classList.remove('unlocked');
     content.hidden = true;
     locked.hidden  = false;
-    const p = locked.querySelector('p');
-    if (p) p.textContent = "⏳ Verifica in corso…";
+    lockedMsg.textContent = "⏳ Verifica in corso…";
+    lockedHint.textContent = "Attendi un momento…";
+    stopConfetti();
   }
   function showLocked(){
     document.title = "Sorpresa";
@@ -80,16 +118,26 @@
     card.classList.remove('unlocked');
     content.hidden = true;
     locked.hidden  = false;
-    const p = locked.querySelector('p');
-    if (p) p.textContent = "🔒 Questa sorpresa è bloccata per ora.";
+    lockedMsg.textContent = "🔒 Per vedere questa sorpresa devi prima completare quella in corso…";
+    lockedHint.textContent = "";
+    stopConfetti();
   }
   function showUnlocked(title){
     document.title = title;
     titleReal.textContent = title;
     pageinfo.textContent = title;
+    /* frasi personalizzate */
+    descBox.innerHTML = "";
+    const lines = COPY[title] || ["Sorpresa speciale per noi due.", "Pronti a viverla?"];
+    lines.forEach(t => {
+      const p = document.createElement('p');
+      p.textContent = t;
+      descBox.appendChild(p);
+    });
     card.classList.add('unlocked');
     content.hidden = false;
     locked.hidden  = true;
+    startConfetti();
   }
 
   async function checkOnce(){
@@ -118,13 +166,72 @@
     }
   }
 
-  // Avvio “robusto” contro bfcache/ritorni
-  check();                                 // normale page load
-  window.addEventListener('pageshow', () => { check(); });          // ritorno da bfcache
-  document.addEventListener('visibilitychange', () => {             // scheda torna visibile
+  /* coriandoli semplici (canvas) */
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  let confettiItems = [], confettiRAF = null;
+
+  function resizeConfetti(){
+    const rect = card.getBoundingClientRect();
+    canvas.width  = Math.ceil(rect.width + 20);
+    canvas.height = Math.ceil(card.classList.contains('unlocked') ? 160 : 0);
+  }
+  window.addEventListener('resize', resizeConfetti);
+
+  function spawnConfetti(n=120){
+    confettiItems = [];
+    const W = canvas.width, H = canvas.height;
+    for (let i=0;i<n;i++){
+      confettiItems.push({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        r: 2 + Math.random()*4,
+        vx: -0.6 + Math.random()*1.2,
+        vy: 0.8 + Math.random()*1.6,
+        a: Math.random()*Math.PI*2
+      });
+    }
+  }
+
+  function drawConfetti(){
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    confettiItems.forEach(p=>{
+      p.x += p.vx; p.y += p.vy; p.a += 0.05;
+      if (p.y > H) { p.y = -10; p.x = Math.random()*W; }
+      if (p.x < -10) p.x = W+10;
+      if (p.x > W+10) p.x = -10;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      const s = Math.sin(p.a)*0.5+0.5;
+      // pastel palette
+      const colors = ["#fda4af","#93c5fd","#fdba74","#86efac","#c4b5fd"];
+      ctx.fillStyle = colors[(p.r*13|0)%colors.length];
+      ctx.beginPath();
+      ctx.arc(0,0,p.r*(0.7+s*0.6),0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    });
+    confettiRAF = requestAnimationFrame(drawConfetti);
+  }
+
+  function startConfetti(){
+    resizeConfetti();
+    spawnConfetti(110);
+    if (!confettiRAF) drawConfetti();
+  }
+  function stopConfetti(){
+    if (confettiRAF) cancelAnimationFrame(confettiRAF);
+    confettiRAF = null;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+
+  // Avvio robusto (contro bfcache/ritorni)
+  check();                                 // page load
+  window.addEventListener('pageshow', () => { check(); });
+  document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') check();
   });
 </script>
-
 </body>
 </html>
