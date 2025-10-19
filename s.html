@@ -20,37 +20,32 @@
     justify-content:center;
     overflow-x:hidden;
   }
+  /* Confetti full-page background */
+  #confetti{position:fixed;inset:0;z-index:0;pointer-events:none}
 
-  /* Confetti background (full page, dietro ai contenuti) */
-  #confetti{position:fixed; inset:0; z-index:0; pointer-events:none;}
-
-  /* Card in primo piano */
+  /* Card */
   .card{
-    position:relative; z-index:1;
-    width:100%; max-width:560px;
-    background:#fff; border-radius:24px; padding:28px 22px;
-    border:1px solid #eee; box-shadow:0 14px 40px rgba(0,0,0,.12);
+    position:relative;z-index:1;width:100%;max-width:560px;background:#fff;
+    border-radius:24px;padding:28px 22px;border:1px solid #eee;
+    box-shadow:0 14px 40px rgba(0,0,0,.12)
   }
   .badge{display:inline-block;padding:8px 14px;border-radius:999px;background:#f3f4f6;font-size:13px;margin-bottom:10px}
   h1{margin:.25rem 0 .5rem;font-size:clamp(26px,5vw,34px)}
   p{margin:.25rem 0 1rem;line-height:1.6;font-size:clamp(16px,3.8vw,18px)}
 
-  /* Box “sorpresa” e “bloccata” comodi su mobile */
+  /* Box stati */
   .ok{
-    background:#ecfeff; border:1px solid #a5f3fc; border-radius:16px;
-    padding:18px; min-height:34vh; display:flex; flex-direction:column; justify-content:center;
+    background:#ecfeff;border:1px solid #a5f3fc;border-radius:16px;
+    padding:18px;min-height:34vh;display:flex;flex-direction:column;justify-content:center
   }
   .locked{
-    border:2px dashed #cbd5e1; background:#f8fafc; border-radius:16px;
-    padding:18px; min-height:28vh; display:flex; flex-direction:column; justify-content:center;
+    border:2px dashed #cbd5e1;background:#f8fafc;border-radius:16px;
+    padding:18px;min-height:28vh;display:flex;flex-direction:column;justify-content:center
   }
-
   .hint{font-size:12px;opacity:.7}
   #title-real{display:none} #title-generic{display:block}
   .unlocked #title-real{display:block} .unlocked #title-generic{display:none}
-
-  /* Forza invisibilità senza ambiguità */
-  .is-hidden{display:none !important;}
+  .is-hidden{display:none!important}
 
   @media (min-width:768px){
     .ok{min-height:28vh}
@@ -59,7 +54,7 @@
 </style>
 </head>
 <body>
-<!-- background coriandoli -->
+<!-- Confetti background -->
 <canvas id="confetti"></canvas>
 
 <main id="card" class="card">
@@ -67,7 +62,7 @@
   <h1 id="title-generic">🎁 C’è una sorpresa!</h1>
   <h1 id="title-real"></h1>
 
-  <!-- CONTENUTO SBLOCCATO -->
+  <!-- SBLOCCATA -->
   <div id="content" class="is-hidden">
     <div class="ok" id="okbox">
       <p><strong>È fatta!</strong> Questa è la tua sorpresa 🥰</p>
@@ -75,13 +70,13 @@
     </div>
   </div>
 
-  <!-- BLOCCATA / LOADING / GIÀ FATTA -->
+  <!-- BLOCCATA / LOADING / COMPLETED -->
   <div id="locked" class="locked">
     <p id="locked-msg">⏳ Verifica in corso…</p>
     <p class="hint" id="locked-hint">Attendi un momento…</p>
   </div>
 
-  <!-- footer neutro (niente spoiler) -->
+  <!-- footer neutro -->
   <p class="hint">ID: <span id="pid"></span> • <span id="pageinfo">Verifica in corso…</span></p>
 </main>
 
@@ -90,7 +85,7 @@
   const API_BASE  = "https://script.google.com/macros/s/AKfycbxr8qtzUH2UsrFETNweEcIEos5QFjUBN5nS9FTzMzTGkLO3GGV7j_ZPSqHyAkVArEsx-A/exec";
   const PLAYER_ID = "IRENE01";
 
-  /* Frasi personalizzate per titolo */
+  /* frasi personalizzate per titolo */
   const COPY = {
     "⛸️ Giornata sui Pattini": [
       "Mano nella mano, scivoliamo leggeri.",
@@ -206,7 +201,7 @@
     document.title = title;
     titleReal.textContent = title;
     pageinfo.textContent = title;
-    // copy personalizzata
+    // copy
     descBox.innerHTML = "";
     (COPY[title] || ["Sorpresa speciale per noi due.", "Pronti a viverla?"]).forEach(t=>{
       const p = document.createElement('p');
@@ -226,7 +221,7 @@
     return r.json();
   }
 
-  /* Guard per evitare sovrascritture tra richieste concorrenti */
+  /* Guard per evitare race conditions */
   let requestId = 0;
   async function check(){
     const my = ++requestId;
@@ -247,7 +242,7 @@
     }
   }
 
-  // Avvio robusto (gestisce anche ritorni/bfcache)
+  // Avvio robusto (gestisce bfcache/ritorni)
   check();
   window.addEventListener('pageshow', () => { check(); });
   document.addEventListener('visibilitychange', () => {
