@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sorpresa (lite)</title>
+<style>body{font:16px/1.5 system-ui;margin:20px} .ok{color:#065f46} .no{color:#7c2d12}</style>
+<pre id="out">loading…</pre>
+<script>
+const API_BASE = "https://script.google.com/macros/s/AKfycbxr8qtzUH2UsrFETNweEcIEos5QFjUBN5nS9FTzMzTGkLO3GGV7j_ZPSqHyAkVArEsx-A/exec";
+const p = new URLSearchParams(location.search);
+const KEY = (p.get('k')||"").trim();
+const ID  = (p.get('id')||"IRENE01").trim();
+
+(async () => {
+  const out = document.getElementById('out');
+  const url = `${API_BASE}?action=checkopen_by_key&id=${encodeURIComponent(ID)}&key=${encodeURIComponent(KEY)}&_=${Date.now()}`;
+  out.textContent = "GET " + url + "\n\n";
+  const t0 = performance.now();
+  try{
+    const r = await fetch(url, {cache:"no-store"});
+    const js = await r.json();
+    const dt = Math.round(performance.now()-t0);
+    out.textContent += `latency: ${dt} ms\n\n` + JSON.stringify(js,null,2) + "\n\n";
+    if (js.ok && js.allowed) {
+      out.insertAdjacentHTML('beforeend', `<div class="ok">✅ SBLOCCATA: ${js.title||"Sorpresa"}</div>`);
+    } else if (js.ok && js.completed) {
+      out.insertAdjacentHTML('beforeend', `<div class="no">✅ GIÀ FATTA</div>`);
+    } else {
+      out.insertAdjacentHTML('beforeend', `<div class="no">🔒 BLOCCATA</div>`);
+    }
+  } catch(e){
+    out.textContent += "ERROR: " + e;
+  }
+})();
+</script>
