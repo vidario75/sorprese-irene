@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8">
+<title>Test API</title>
+<pre id="out">loading…</pre>
+<script>
+const API_BASE = "https://script.google.com/macros/s/AKfycbxr8qtzUH2UsrFETNweEcIEos5QFjUBN5nS9FTzMzTGkLO3GGV7j_ZPSqHyAkVArEsx-A/exec";
+const p = new URLSearchParams(location.search);
+const KEY = (p.get('k')||"").trim();
+const ID  = (p.get('id')||"IRENE01").trim();
+
+(async () => {
+  const out = document.getElementById('out');
+  const url = `${API_BASE}?action=checkopen_by_key&id=${encodeURIComponent(ID)}&key=${encodeURIComponent(KEY)}&_=${Date.now()}`;
+  out.textContent = "GET " + url + "\n\n";
+  try{
+    const t0 = performance.now();
+    const r = await fetch(url,{cache:"no-store"});
+    const js = await r.json();
+    const dt = Math.round(performance.now()-t0);
+    out.textContent += `latency: ${dt} ms\n\n` + JSON.stringify(js,null,2);
+  }catch(e){
+    out.textContent += "ERROR: " + String(e);
+  }
+})();
+</script>
