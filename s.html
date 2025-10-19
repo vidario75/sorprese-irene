@@ -21,10 +21,8 @@
     overflow-x:hidden;
   }
 
-  /* Confetti canvas: background di tutta la pagina */
-  #confetti{
-    position:fixed; inset:0; z-index:0; pointer-events:none;
-  }
+  /* Confetti background (full page, dietro ai contenuti) */
+  #confetti{position:fixed; inset:0; z-index:0; pointer-events:none;}
 
   /* Card in primo piano */
   .card{
@@ -37,7 +35,7 @@
   h1{margin:.25rem 0 .5rem;font-size:clamp(26px,5vw,34px)}
   p{margin:.25rem 0 1rem;line-height:1.6;font-size:clamp(16px,3.8vw,18px)}
 
-  /* Box “sorpresa” e “bloccata” più alti e comodi su mobile */
+  /* Box “sorpresa” e “bloccata” comodi su mobile */
   .ok{
     background:#ecfeff; border:1px solid #a5f3fc; border-radius:16px;
     padding:18px; min-height:34vh; display:flex; flex-direction:column; justify-content:center;
@@ -51,7 +49,7 @@
   #title-real{display:none} #title-generic{display:block}
   .unlocked #title-real{display:block} .unlocked #title-generic{display:none}
 
-  /* forza l'invisibilità senza ambiguità */
+  /* Forza invisibilità senza ambiguità */
   .is-hidden{display:none !important;}
 
   @media (min-width:768px){
@@ -61,7 +59,7 @@
 </style>
 </head>
 <body>
-<!-- background a coriandoli -->
+<!-- background coriandoli -->
 <canvas id="confetti"></canvas>
 
 <main id="card" class="card">
@@ -77,7 +75,7 @@
     </div>
   </div>
 
-  <!-- BLOCCATA / LOADING -->
+  <!-- BLOCCATA / LOADING / GIÀ FATTA -->
   <div id="locked" class="locked">
     <p id="locked-msg">⏳ Verifica in corso…</p>
     <p class="hint" id="locked-hint">Attendi un momento…</p>
@@ -92,7 +90,7 @@
   const API_BASE  = "https://script.google.com/macros/s/AKfycbxr8qtzUH2UsrFETNweEcIEos5QFjUBN5nS9FTzMzTGkLO3GGV7j_ZPSqHyAkVArEsx-A/exec";
   const PLAYER_ID = "IRENE01";
 
-  /* frasi personalizzate per titolo */
+  /* Frasi personalizzate per titolo */
   const COPY = {
     "⛸️ Giornata sui Pattini": [
       "Mano nella mano, scivoliamo leggeri.",
@@ -173,7 +171,7 @@
   function startConfetti(){ resizeConfetti(); spawnConfetti(); if (!confettiRAF) drawConfetti(); }
   function stopConfetti(){ if (confettiRAF) cancelAnimationFrame(confettiRAF); confettiRAF=null; ctx.clearRect(0,0,canvas.width,canvas.height); }
 
-  /* UI helpers con classi (niente hidden “ballerini”) */
+  /* UI helpers */
   function showLoading(){
     document.title = "Sorpresa";
     pageinfo.textContent = "Verifica in corso…";
@@ -192,6 +190,16 @@
     locked.classList.remove('is-hidden');
     lockedMsg.textContent = "🔒 Per vedere questa sorpresa devi prima completare quella in corso…";
     lockedHint.textContent = "";
+    stopConfetti();
+  }
+  function showCompleted(){
+    document.title = "Sorpresa";
+    pageinfo.textContent = "Sorpresa già fatta";
+    card.classList.remove('unlocked');
+    content.classList.add('is-hidden');
+    locked.classList.remove('is-hidden');
+    lockedMsg.textContent = "✅ Questa sorpresa è già stata fatta!";
+    lockedHint.textContent = "Scegli (o attendi) un altro biglietto.";
     stopConfetti();
   }
   function showUnlocked(title){
@@ -229,6 +237,8 @@
       if (my !== requestId) return; // ignora risposte vecchie
       if (js && js.ok && js.allowed){
         showUnlocked(js.title || "Sorpresa");
+      } else if (js && js.ok && js.completed){
+        showCompleted();
       } else {
         showLocked();
       }
