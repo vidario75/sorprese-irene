@@ -48,13 +48,13 @@
 
 <main id="card" class="card">
   <span class="badge">Sorpresa</span>
-  <h1 id="title-generic">🎁 C’è una sorpresa!</h1>
+  <h1 id="title-generic">🎁 C’è una sorpresa per te!</h1>
   <h1 id="title-real"></h1>
 
   <!-- SBLOCCATA -->
   <div id="content" class="is-hidden">
     <div class="ok">
-      <p><strong>È fatta!</strong> Questa è la tua sorpresa 🥰</p>
+      <p><strong>Ecco!</strong> Questa è la tua sorpresa 🥰</p>
       <div id="desc"></div>
     </div>
   </div>
@@ -140,7 +140,7 @@
     content.classList.add('is-hidden'); content.hidden=true;
     locked.classList.remove('is-hidden'); locked.hidden=false;
     lockedMsg.textContent="✅ Questa sorpresa è già stata fatta!";
-    lockedHint.textContent="Scegli (o attendi) un altro biglietto.";
+    lockedHint.textContent="Scegli un altro biglietto 😊";
     stopConfetti();
   }
   function showUnlocked(title, descArr){
