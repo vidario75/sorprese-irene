@@ -73,25 +73,6 @@
   const API_BASE  = "https://script.google.com/macros/s/AKfycbxr8qtzUH2UsrFETNweEcIEos5QFjUBN5nS9FTzMzTGkLO3GGV7j_ZPSqHyAkVArEsx-A/exec";
   const PLAYER_ID = "IRENE01";
 
-  const COPY = {
-    "⛸️ Giornata sui Pattini": [
-      "Mano nella mano, scivoliamo leggeri.",
-      "Tra una risata e una piroetta, il tempo vola."
-    ],
-    "🎬 Serata al Cinema": [
-      "Popcorn, sguardi e risate in penombra.",
-      "Scegliamo un posto in fondo, solo noi due."
-    ],
-    "📺 Film a Casa": [
-      "Copertina, luci soffuse e coccole.",
-      "Il divano è la nostra prima fila."
-    ],
-    "🍝 Cuciniamo Insieme": [
-      "Ingredienti: tu, io e un pizzico d’amore.",
-      "Ricetta a sorpresa e musica in sottofondo."
-    ]
-  };
-
   // DOM
   const card      = document.getElementById('card');
   const content   = document.getElementById('content');
@@ -162,14 +143,18 @@
     lockedHint.textContent="Scegli (o attendi) un altro biglietto.";
     stopConfetti();
   }
-  function showUnlocked(title){
+  function showUnlocked(title, descArr){
     document.title=title;
     titleReal.textContent=title;
     statusline.textContent=title;
     descBox.innerHTML="";
-    (COPY[title]||["Sorpresa speciale per noi due.","Pronti a viverla?"]).forEach(t=>{
-      const p=document.createElement('p'); p.style.margin="0 0 .8rem"; p.textContent=t; descBox.appendChild(p);
-    });
+    var list = (Array.isArray(descArr) && descArr.length) ? descArr : ["Sorpresa speciale per noi due.","Pronti a viverla?"];
+    for (var i=0;i<list.length;i++){
+      var p=document.createElement('p');
+      p.style.margin="0 0 .8rem";
+      p.textContent=list[i];
+      descBox.appendChild(p);
+    }
     locked.classList.add('is-hidden'); locked.hidden=true;
     content.classList.remove('is-hidden'); content.hidden=false;
     card.classList.add('unlocked');
@@ -177,7 +162,7 @@
   }
 
   async function checkOnce(){
-    const url = `${API_BASE}?action=checkopen_by_key&id=${encodeURIComponent(PLAYER_ID)}&key=${encodeURIComponent(KEY)}&_=${Date.now()}`;
+    const url = API_BASE + "?action=checkopen_by_key&id=" + encodeURIComponent(PLAYER_ID) + "&key=" + encodeURIComponent(KEY) + "&_=" + Date.now();
     const r = await fetch(url,{cache:'no-store'});
     return r.json();
   }
@@ -191,7 +176,7 @@
       const js = await checkOnce();
       if(my!==requestId) return;
       if(js && js.ok && js.allowed){
-        showUnlocked(js.title||"Sorpresa");
+        showUnlocked(js.title || "Sorpresa", js.desc || []);
       } else if (js && js.ok && js.completed){
         showCompleted();
       } else {
