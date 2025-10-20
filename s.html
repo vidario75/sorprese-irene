@@ -10,51 +10,26 @@
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;height:100%}
   body{
-    min-height:100vh;
-    background:linear-gradient(135deg,var(--bg1),var(--bg2));
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-    color:#111;
-    padding:16px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    overflow-x:hidden;
+    min-height:100vh;background:linear-gradient(135deg,var(--bg1),var(--bg2));
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111;
+    padding:16px;display:flex;align-items:center;justify-content:center;overflow-x:hidden;
   }
-  /* Confetti full-page background */
   #confetti{position:fixed;inset:0;z-index:0;pointer-events:none}
-
-  /* Card */
-  .card{
-    position:relative;z-index:1;width:100%;max-width:560px;background:#fff;
-    border-radius:24px;padding:28px 22px;border:1px solid #eee;
-    box-shadow:0 14px 40px rgba(0,0,0,.12)
-  }
+  .card{position:relative;z-index:1;width:100%;max-width:560px;background:#fff;border-radius:24px;
+    padding:28px 22px;border:1px solid #eee;box-shadow:0 14px 40px rgba(0,0,0,.12)}
   .badge{display:inline-block;padding:8px 14px;border-radius:999px;background:#f3f4f6;font-size:13px;margin-bottom:10px}
   h1{margin:.25rem 0 .5rem;font-size:clamp(26px,5vw,34px)}
   p{margin:.25rem 0 1rem;line-height:1.6;font-size:clamp(16px,3.8vw,18px)}
-
-  /* Box stati */
-  .ok{
-    background:#ecfeff;border:1px solid #a5f3fc;border-radius:16px;
-    padding:18px;min-height:34vh;display:flex;flex-direction:column;justify-content:center
-  }
-  .locked{
-    border:2px dashed #cbd5e1;background:#f8fafc;border-radius:16px;
-    padding:18px;min-height:28vh;display:flex;flex-direction:column;justify-content:center
-  }
+  .ok{background:#ecfeff;border:1px solid #a5f3fc;border-radius:16px;padding:18px;min-height:34vh;display:flex;flex-direction:column;justify-content:center}
+  .locked{border:2px dashed #cbd5e1;background:#f8fafc;border-radius:16px;padding:18px;min-height:28vh;display:flex;flex-direction:column;justify-content:center}
   .hint{font-size:12px;opacity:.7}
   #title-real{display:none} #title-generic{display:block}
   .unlocked #title-real{display:block} .unlocked #title-generic{display:none}
   .is-hidden{display:none!important}
-
-  @media (min-width:768px){
-    .ok{min-height:28vh}
-    .locked{min-height:22vh}
-  }
+  @media (min-width:768px){ .ok{min-height:28vh} .locked{min-height:22vh} }
 </style>
 </head>
 <body>
-<!-- Confetti background -->
 <canvas id="confetti"></canvas>
 
 <main id="card" class="card">
@@ -62,192 +37,162 @@
   <h1 id="title-generic">🎁 C’è una sorpresa!</h1>
   <h1 id="title-real"></h1>
 
-  <!-- SBLOCCATA -->
   <div id="content" class="is-hidden">
-    <div class="ok" id="okbox">
+    <div class="ok">
       <p><strong>È fatta!</strong> Questa è la tua sorpresa 🥰</p>
       <div id="desc"></div>
     </div>
   </div>
 
-  <!-- BLOCCATA / LOADING / COMPLETED -->
   <div id="locked" class="locked">
     <p id="locked-msg">⏳ Verifica in corso…</p>
     <p class="hint" id="locked-hint">Attendi un momento…</p>
   </div>
 
-  <!-- footer neutro -->
   <p class="hint">ID: <span id="pid"></span> • <span id="pageinfo">Verifica in corso…</span></p>
 </main>
 
 <script>
-  /* >>> CONFIG <<< */
-  const API_BASE  = "https://script.google.com/macros/s/AKfycbxr8qtzUH2UsrFETNweEcIEos5QFjUBN5nS9FTzMzTGkLO3GGV7j_ZPSqHyAkVArEsx-A/exec";
-  const PLAYER_ID = "IRENE01";
+/* === CONFIG === */
+const API_BASE  = "https://script.google.com/macros/s/AKfycbxr8qtzUH2UsrFETNweEcIEos5QFjUBN5nS9FTzMzTGkLO3GGV7j_ZPSqHyAkVArEsx-A/exec";
+let   PLAYER_ID = "IRENE01";
 
-  /* frasi personalizzate per titolo */
-  const COPY = {
-    "⛸️ Giornata sui Pattini": [
-      "Mano nella mano, scivoliamo leggeri.",
-      "Tra una risata e una piroetta, il tempo vola."
-    ],
-    "🎬 Serata al Cinema": [
-      "Popcorn, sguardi e risate in penombra.",
-      "Scegliamo un posto in fondo, solo noi due."
-    ],
-    "📺 Film a Casa": [
-      "Copertina, luci soffuse e coccole.",
-      "Il divano è la nostra prima fila."
-    ],
-    "🍝 Cuciniamo Insieme": [
-      "Ingredienti: tu, io e un pizzico d’amore.",
-      "Ricetta a sorpresa e musica in sottofondo."
-    ]
-  };
+/* === PARAMS === */
+const urlParams = new URLSearchParams(location.search);
+const KEY = (urlParams.get('k') || "").trim();
+if (urlParams.get('id')) PLAYER_ID = urlParams.get('id').trim();
 
-  // DOM refs
-  const card      = document.getElementById('card');
-  const content   = document.getElementById('content');
-  const locked    = document.getElementById('locked');
-  const lockedMsg = document.getElementById('locked-msg');
-  const lockedHint= document.getElementById('locked-hint');
-  const pid       = document.getElementById('pid');
-  const pageinfo  = document.getElementById('pageinfo');
-  const titleReal = document.getElementById('title-real');
-  const descBox   = document.getElementById('desc');
+/* === DOM REFS === */
+const card      = document.getElementById('card');
+const content   = document.getElementById('content');
+const locked    = document.getElementById('locked');
+const lockedMsg = document.getElementById('locked-msg');
+const lockedHint= document.getElementById('locked-hint');
+const pid       = document.getElementById('pid');
+const pageinfo  = document.getElementById('pageinfo');
+const titleReal = document.getElementById('title-real');
+const descBox   = document.getElementById('desc');
+pid.textContent = PLAYER_ID;
 
-  pid.textContent = PLAYER_ID;
+/* === Confetti BG === */
+const canvas = document.getElementById('confetti');
+const ctx = canvas.getContext('2d');
+let confettiItems = [], confettiRAF = null;
+function resizeConfetti(){ canvas.width = Math.ceil(innerWidth); canvas.height = Math.ceil(innerHeight); }
+addEventListener('resize', resizeConfetti, {passive:true});
+function spawnConfetti(n=150){ confettiItems=[]; const W=canvas.width,H=canvas.height;
+  for(let i=0;i<n;i++) confettiItems.push({x:Math.random()*W,y:Math.random()*H,r:2+Math.random()*5,vx:-0.6+Math.random()*1.2,vy:0.8+Math.random()*1.8,a:Math.random()*Math.PI*2});
+}
+function drawConfetti(){ const W=canvas.width,H=canvas.height; ctx.clearRect(0,0,W,H);
+  confettiItems.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.a+=0.04;
+    if(p.y>H){p.y=-10;p.x=Math.random()*W} if(p.x<-10)p.x=W+10; if(p.x>W+10)p.x=-10;
+    ctx.save(); ctx.translate(p.x,p.y); const s=Math.sin(p.a)*0.5+0.5;
+    const colors=["#fda4af","#93c5fd","#fdba74","#86efac","#c4b5fd"]; ctx.fillStyle=colors[(p.r*13|0)%colors.length];
+    ctx.beginPath(); ctx.arc(0,0,p.r*(0.7+s*0.6),0,Math.PI*2); ctx.fill(); ctx.restore();
+  }); confettiRAF=requestAnimationFrame(drawConfetti);
+}
+function startConfetti(){ resizeConfetti(); spawnConfetti(); if(!confettiRAF) drawConfetti(); }
+function stopConfetti(){ if(confettiRAF) cancelAnimationFrame(confettiRAF); confettiRAF=null; ctx.clearRect(0,0,canvas.width,canvas.height); }
 
-  const KEY = (new URLSearchParams(location.search).get('k') || "").trim();
+/* === Testi personalizzati === */
+const COPY = {
+  "⛸️ Giornata sui Pattini": [
+    "Mano nella mano, scivoliamo leggeri.",
+    "Tra una risata e una piroetta, il tempo vola."
+  ],
+  "🎬 Serata al Cinema": [
+    "Popcorn, sguardi e risate in penombra.",
+    "Scegliamo un posto in fondo, solo noi due."
+  ],
+  "📺 Film a Casa": [
+    "Copertina, luci soffuse e coccole.",
+    "Il divano è la nostra prima fila."
+  ],
+  "🍝 Cuciniamo Insieme": [
+    "Ingredienti: tu, io e un pizzico d’amore.",
+    "Ricetta a sorpresa e musica in sottofondo."
+  ]
+};
 
-  /* === Confetti full-page background === */
-  const canvas = document.getElementById('confetti');
-  const ctx = canvas.getContext('2d');
-  let confettiItems = [], confettiRAF = null;
+/* === UI HELPERS === */
+const dbg = (m) => { try{console.log(m);}catch(e){}; pageinfo.textContent = m; };
 
-  function resizeConfetti(){
-    canvas.width  = Math.ceil(window.innerWidth);
-    canvas.height = Math.ceil(window.innerHeight);
-  }
-  window.addEventListener('resize', resizeConfetti, {passive:true});
-
-  function spawnConfetti(n=150){
-    confettiItems = [];
-    const W = canvas.width, H = canvas.height;
-    for (let i=0;i<n;i++){
-      confettiItems.push({
-        x: Math.random()*W,
-        y: Math.random()*H,
-        r: 2 + Math.random()*5,
-        vx: -0.6 + Math.random()*1.2,
-        vy: 0.8 + Math.random()*1.8,
-        a: Math.random()*Math.PI*2
-      });
-    }
-  }
-  function drawConfetti(){
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0,0,W,H);
-    confettiItems.forEach(p=>{
-      p.x += p.vx; p.y += p.vy; p.a += 0.04;
-      if (p.y > H) { p.y = -10; p.x = Math.random()*W; }
-      if (p.x < -10) p.x = W+10;
-      if (p.x > W+10) p.x = -10;
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      const s = Math.sin(p.a)*0.5+0.5;
-      const colors = ["#fda4af","#93c5fd","#fdba74","#86efac","#c4b5fd"];
-      ctx.fillStyle = colors[(p.r*13|0)%colors.length];
-      ctx.beginPath(); ctx.arc(0,0,p.r*(0.7+s*0.6),0,Math.PI*2); ctx.fill();
-      ctx.restore();
-    });
-    confettiRAF = requestAnimationFrame(drawConfetti);
-  }
-  function startConfetti(){ resizeConfetti(); spawnConfetti(); if (!confettiRAF) drawConfetti(); }
-  function stopConfetti(){ if (confettiRAF) cancelAnimationFrame(confettiRAF); confettiRAF=null; ctx.clearRect(0,0,canvas.width,canvas.height); }
-
-  /* UI helpers */
-  function showLoading(){
-    document.title = "Sorpresa";
-    pageinfo.textContent = "Verifica in corso…";
-    card.classList.remove('unlocked');
-    content.classList.add('is-hidden');
-    locked.classList.remove('is-hidden');
-    lockedMsg.textContent = "⏳ Verifica in corso…";
-    lockedHint.textContent = "Attendi un momento…";
-    stopConfetti();
-  }
-  function showLocked(){
-    document.title = "Sorpresa";
-    pageinfo.textContent = "Sorpresa bloccata";
-    card.classList.remove('unlocked');
-    content.classList.add('is-hidden');
-    locked.classList.remove('is-hidden');
-    lockedMsg.textContent = "🔒 Per vedere questa sorpresa devi prima completare quella in corso…";
-    lockedHint.textContent = "";
-    stopConfetti();
-  }
-  function showCompleted(){
-    document.title = "Sorpresa";
-    pageinfo.textContent = "Sorpresa già fatta";
-    card.classList.remove('unlocked');
-    content.classList.add('is-hidden');
-    locked.classList.remove('is-hidden');
-    lockedMsg.textContent = "✅ Questa sorpresa è già stata fatta!";
-    lockedHint.textContent = "Scegli (o attendi) un altro biglietto.";
-    stopConfetti();
-  }
-  function showUnlocked(title){
-    document.title = title;
-    titleReal.textContent = title;
-    pageinfo.textContent = title;
-    // copy
-    descBox.innerHTML = "";
-    (COPY[title] || ["Sorpresa speciale per noi due.", "Pronti a viverla?"]).forEach(t=>{
-      const p = document.createElement('p');
-      p.style.margin = "0 0 .8rem";
-      p.textContent = t;
-      descBox.appendChild(p);
-    });
-    card.classList.add('unlocked');
-    locked.classList.add('is-hidden');
-    content.classList.remove('is-hidden');
-    startConfetti();
-  }
-
-  async function checkOnce(){
-    const url = `${API_BASE}?action=checkopen_by_key&id=${encodeURIComponent(PLAYER_ID)}&key=${encodeURIComponent(KEY)}&_=${Date.now()}`;
-    const r = await fetch(url, { cache:'no-store' });
-    return r.json();
-  }
-
-  /* Guard per evitare race conditions */
-  let requestId = 0;
-  async function check(){
-    const my = ++requestId;
-    showLoading();
-    if (!KEY){ if (my===requestId) showLocked(); return; }
-    try{
-      const js = await checkOnce();
-      if (my !== requestId) return; // ignora risposte vecchie
-      if (js && js.ok && js.allowed){
-        showUnlocked(js.title || "Sorpresa");
-      } else if (js && js.ok && js.completed){
-        showCompleted();
-      } else {
-        showLocked();
-      }
-    } catch(e){
-      if (my === requestId) showLocked();
-    }
-  }
-
-  // Avvio robusto (gestisce bfcache/ritorni)
-  check();
-  window.addEventListener('pageshow', () => { check(); });
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') check();
+function showLoading(){
+  document.title="Sorpresa";
+  card.classList.remove('unlocked');
+  content.classList.add('is-hidden'); content.hidden=true;
+  locked.classList.remove('is-hidden'); locked.hidden=false;
+  lockedMsg.textContent="⏳ Verifica in corso…";
+  lockedHint.textContent="Attendi un momento…";
+  dbg("Verifica in corso…");
+  stopConfetti();
+}
+function showLocked(){
+  document.title="Sorpresa";
+  card.classList.remove('unlocked');
+  content.classList.add('is-hidden'); content.hidden=true;
+  locked.classList.remove('is-hidden'); locked.hidden=false;
+  lockedMsg.textContent="🔒 Per vedere questa sorpresa devi prima completare quella in corso…";
+  lockedHint.textContent="";
+  dbg("Sorpresa bloccata");
+  stopConfetti();
+}
+function showCompleted(){
+  document.title="Sorpresa";
+  card.classList.remove('unlocked');
+  content.classList.add('is-hidden'); content.hidden=true;
+  locked.classList.remove('is-hidden'); locked.hidden=false;
+  lockedMsg.textContent="✅ Questa sorpresa è già stata fatta!";
+  lockedHint.textContent="Scegli (o attendi) un altro biglietto.";
+  dbg("Sorpresa già fatta");
+  stopConfetti();
+}
+function showUnlocked(title){
+  document.title=title;
+  titleReal.textContent=title;
+  descBox.innerHTML="";
+  (COPY[title]||["Sorpresa speciale per noi due.","Pronti a viverla?"]).forEach(t=>{
+    const p=document.createElement('p'); p.style.margin="0 0 .8rem"; p.textContent=t; descBox.appendChild(p);
   });
+  locked.classList.add('is-hidden'); locked.hidden=true;
+  content.classList.remove('is-hidden'); content.hidden=false;
+  card.classList.add('unlocked');
+  dbg(title);
+  startConfetti();
+}
+
+/* === API === */
+async function checkOnce(){
+  const url = `${API_BASE}?action=checkopen_by_key&id=${encodeURIComponent(PLAYER_ID)}&key=${encodeURIComponent(KEY)}&_=${Date.now()}`;
+  return fetch(url,{cache:'no-store'}).then(r=>r.json());
+}
+
+/* === FLOW con guard === */
+let requestId=0;
+async function check(){
+  const my=++requestId;
+  showLoading();
+  if(!KEY){ if(my===requestId) showLocked(); return; }
+  try{
+    const js = await checkOnce();
+    dbg(`resp: ${JSON.stringify(js)}`);
+    if(my!==requestId) return;
+    if(js && js.ok && js.allowed){
+      showUnlocked(js.title||"Sorpresa");
+    } else if (js && js.ok && js.completed){
+      showCompleted();
+    } else {
+      showLocked();
+    }
+  }catch(e){
+    if(my===requestId) showLocked();
+  }
+}
+
+/* === Avvio robusto === */
+check();
+addEventListener('pageshow',()=>{ check(); });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') check(); });
 </script>
 </body>
 </html>
